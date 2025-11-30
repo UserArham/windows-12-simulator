@@ -1,0 +1,74 @@
+body, html {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #4a90e2; /* blue‑ish desktop background */
+  font-family: sans-serif;
+}
+
+#taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: #333;
+  color: white;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+}
+
+#start-button {
+  cursor: pointer;
+  user-select: none;
+}
+
+#desktop {
+  position: absolute;
+  top: 0;
+  bottom: 40px; /* leave space for taskbar */
+  left: 0;
+  right: 0;
+  padding: 20px;
+}
+
+.icon {
+  width: 80px;
+  text-align: center;
+  margin: 10px;
+  color: white;
+  cursor: pointer;
+}
+
+.window {
+  position: absolute;
+  width: 300px;
+  height: 200px;
+  background: white;
+  border: 1px solid #888;
+  box-shadow: 4px 4px 8px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.window-header {
+  background: #555;
+  color: white;
+  padding: 5px;
+  cursor: move;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.window-content {
+  flex: 1;
+  padding: 10px;
+  background: #fafafa;
+}
+
+.close-button {
+  cursor: pointer;
+}
