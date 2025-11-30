@@ -1,0 +1,199 @@
+"use client";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Clock } from "lucide-react";
+
+// Base64 encoded fallback wallpaper (blue gradient)
+const FALLBACK_WALLPAPER = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNDQwIDkwMCI+PHBhdGggZmlsbD0iIzAwN2FjZCIgZD0iTTAgMGgxNDQwdjkwMEgweiIvPjxwYXRoIGZpbGw9IiMxNDVmYzQiIGQ9Ik0wIDBoMTQ0MHY0NTBIMHoiLz48cGF0aCBmaWxsPSIjMDA4OGQ3IiBkPSJNMCA0NTBoMTQ0MHY0NTBIMHoiLz48L3N2Zz4=";
+
+export default function Windows7Desktop() {
+  const [bootStage, setBootStage] = useState<"bios" | "windows" | "login" | "desktop">("bios");
+  const [password, setPassword] = useState("");
+  const [startMenuOpen, setStartMenuOpen] = useState(false);
+  const [time, setTime] = useState(new Date());
+  const [wallpaperLoaded, setWallpaperLoaded] = useState(false);
+
+  // Check if wallpaper loads successfully
+  useEffect(() => {
+    const img = new Image();
+    img.src = "https://wallpapercave.com/wp/wp1846069.jpg";
+    img.onload = () => setWallpaperLoaded(true);
+    img.onerror = () => setWallpaperLoaded(false);
+  }, []);
+
+  // Boot sequence
+  useEffect(() => {
+    const biosTimer = setTimeout(() => setBootStage("windows"), 2000);
+    const windowsTimer = setTimeout(() => setBootStage("login"), 5000);
+    
+    return () => {
+      clearTimeout(biosTimer);
+      clearTimeout(windowsTimer);
+    };
+  }, []);
+
+  // System clock
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleLogin = () => {
+    if (password === "1223") {
+      setBootStage("desktop");
+    }
+  };
+
+  // Determine background style
+  const desktopBackground = wallpaperLoaded 
+    ? { backgroundImage: "url('https://wallpapercave.com/wp/wp1846069.jpg')" }
+    : { backgroundImage: `url('${FALLBACK_WALLPAPER}')` };
+
+  if (bootStage === "bios") {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-black text-green-500 font-mono">
+        <div className="animate-pulse">
+          <div className="mb-4">BIOS Version P6T58</div>
+          <div className="mb-4">Memory Test: 8192MB OK</div>
+          <div>Press DEL to enter SETUP...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (bootStage === "windows") {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-blue-900">
+        <div className="mb-8 flex items-center justify-center">
+          <div className="h-16 w-16 animate-pulse">
+            <div className="flex h-full w-full items-center justify-center rounded-full bg-white">
+              <svg viewBox="0 0 24 24" className="h-10 w-10 text-blue-900">
+                <path fill="currentColor" d="M3,12V6.75L9,5.43V11.91L3,12M20,3V11.75L10,11.9V5.21L20,3M3,13L9,13.09V19.9L3,18.75V13M20,13.25V22L10,20.09V13.1M20,13.25Z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="h-1 w-64 overflow-hidden rounded-full bg-gray-700">
+          <div className="h-full animate-[progress_4s_linear] bg-white"></div>
+        </div>
+        <div className="mt-4 text-white">Starting Windows...</div>
+      </div>
+    );
+  }
+
+  if (bootStage === "login") {
+    return (
+      <div 
+        className="h-screen w-full bg-cover bg-center bg-no-repeat flex items-center justify-center"
+        style={desktopBackground}
+      >
+        <Card className="w-96 bg-white/90 p-6 shadow-xl">
+          <div className="flex items-center space-x-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-500">
+              <svg viewBox="0 0 24 24" className="h-10 w-10 text-white">
+                <path fill="currentColor" d="M3,12V6.75L9,5.43V11.91L3,12M20,3V11.75L10,11.9V5.21L20,3M3,13L9,13.09V19.9L3,18.75V13M20,13.25V22L10,20.09V13.1M20,13.25Z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold">User</h1>
+              <p className="text-sm text-gray-500">Windows 7</p>
+            </div>
+          </div>
+          
+          <div className="mt-6 space-y-4">
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+            />
+            
+            <Button 
+              className="w-full bg-blue-500 hover:bg-blue-600" 
+              onClick={handleLogin}
+            >
+              Sign In
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // Desktop view
+  return (
+    <div 
+      className="h-screen w-full bg-cover bg-center bg-no-repeat"
+      style={desktopBackground}
+    >
+      {/* Desktop Icons */}
+      <div className="absolute left-0 top-0 p-4 space-y-6">
+        {['Internet Explorer', 'Terminal', 'Paint'].map((item) => (
+          <button 
+            key={item} 
+            className="flex flex-col items-center space-y-2 text-white text-center w-20 hover:bg-white/10 rounded p-1"
+          >
+            <div className="flex h-16 w-16 items-center justify-center bg-gray-200/20 rounded-xl">
+              {item === 'Internet Explorer' && (
+                <svg viewBox="0 0 24 24" className="h-10 w-10 text-white">
+                  <path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6.5A1.5,1.5 0 0,0 10.5,8A1.5,1.5 0 0,0 12,9.5A1.5,1.5 0 0,0 13.5,8A1.5,1.5 0 0,0 12,6.5M6.5,10A1.5,1.5 0 0,0 5,11.5A1.5,1.5 0 0,0 6.5,13A1.5,1.5 0 0,0 8,11.5A1.5,1.5 0 0,0 6.5,10M17.5,10A1.5,1.5 0 0,0 16,11.5A1.5,1.5 0 0,0 17.5,13A1.5,1.5 0 0,0 19,11.5A1.5,1.5 0 0,0 17.5,10M12,15C10.29,15 8.88,15.63 7.78,16.53C6.67,17.43 6.12,18.5 6.12,19.5L6.12,20C6.12,20.27 6.33,20.5 6.6,20.5H17.4C17.67,20.5 17.88,20.27 17.88,20V19.5C17.88,18.5 17.33,17.43 16.22,16.53C15.12,15.63 13.71,15 12,15Z" />
+                </svg>
+              )}
+              {item === 'Terminal' && (
+                <svg viewBox="0 0 24 24" className="h-10 w-10 text-white">
+                  <path fill="currentColor" d="M4,3H20A1,1 0 0,1 21,4V20A1,1 0 0,1 20,21H4A1,1 0 0,1 3,20V4A1,1 0 0,1 4,3M5,5V19H19V5H5M7,7H17V9H7V7M7,11H17V13H7V11M7,15H14V17H7V15Z" />
+                </svg>
+              )}
+              {item === 'Paint' && (
+                <svg viewBox="0 0 24 24" className="h-10 w-10 text-white">
+                  <path fill="currentColor" d="M18,4H16V2H8V4H6V2H4V4H3A1,1 0 0,0 2,5V19A1,1 0 0,0 3,20H7V19H4V17H6V16H4V14H6V13H4V11H6V10H4V8H6V7H4V5H7V6H17V5H20V7H18V8H20V10H18V11H20V13H18V14H20V16H18V17H20V19H17V20H21A1,1 0 0,0 22,19V5A1,1 0 0,0 21,4H18M14,13V15H16V13H14M10,13V15H12V13H10M14,9V11H16V9H14M10,9V11H12V9H10M14,5V7H16V5H14M10,5V7H12V5H10Z" />
+                </svg>
+              )}
+            </div>
+            <span className="text-sm text-shadow">{item}</span>
+          </button>
+        ))}
+      </div>
+      
+      {/* Taskbar */}
+      <div className="absolute bottom-0 left-0 right-0 h-10 bg-gray-800/90 flex items-center px-2">
+        <Button 
+          variant="ghost" 
+          className="h-8 px-2 text-white hover:bg-blue-600"
+          onClick={() => setStartMenuOpen(!startMenuOpen)}
+        >
+          Start
+        </Button>
+        
+        <div className="ml-auto flex items-center text-white text-sm">
+          <Clock className="h-4 w-4 mr-1" />
+          {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      </div>
+      
+      {/* Start Menu */}
+      {startMenuOpen && (
+        <div className="absolute bottom-12 left-0 w-64 h-96 bg-gray-100 border-t-4 border-blue-500 shadow-xl">
+          <div className="p-2 bg-blue-500 text-white font-bold">User</div>
+          <div className="p-2">
+            {['Internet Explorer', 'Terminal', 'Paint'].map((app) => (
+              <button 
+                key={app}
+                className="w-full text-left px-2 py-1 hover:bg-blue-100 rounded"
+                onClick={() => setStartMenuOpen(false)}
+              >
+                {app}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+Share
+Refresh
+Copy
