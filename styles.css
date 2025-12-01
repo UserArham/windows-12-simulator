@@ -72,3 +72,109 @@ body, html {
 .close-button {
   cursor: pointer;
 }
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: sans-serif;
+  background: #1e1e1e; /* Windows 10 style dark desktop */
+  color: white;
+}
+
+#desktop {
+  position: absolute;
+  top: 0;
+  bottom: 40px;
+  left: 0;
+  right: 0;
+  padding: 20px;
+}
+
+.icon {
+  display: inline-block;
+  width: 80px;
+  text-align: center;
+  margin: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+#taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: #333;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+}
+
+#start-button {
+  cursor: pointer;
+  user-select: none;
+  margin-right: 10px;
+}
+
+#running-windows {
+  display: flex;
+  gap: 5px;
+}
+
+.window {
+  position: absolute;
+  width: 300px;
+  height: 200px;
+  background: white;
+  color: black;
+  border: 1px solid #888;
+  box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  resize: both;
+  overflow: hidden;
+}
+
+.window-header {
+  background: #0078d7;
+  color: white;
+  padding: 5px;
+  cursor: move;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.window-content {
+  flex: 1;
+  padding: 10px;
+  background: #f3f3f3;
+  overflow: auto;
+}
+
+.close-button {
+  cursor: pointer;
+}
+
+#start-menu {
+  position: fixed;
+  bottom: 40px;
+  left: 10px;
+  width: 200px;
+  background: #222;
+  display: none;
+  flex-direction: column;
+  border: 1px solid #444;
+}
+
+.start-app {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.start-app:hover {
+  background: #555;
+}
