@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Windows 12 Simulator - 13 Cartridges</title>
+<style>
+body, html {margin:0;padding:0;height:100%;font-family:sans-serif;background:#1e1e1e;color:white;overflow:hidden;}
+#desktop {position:absolute;top:0;bottom:40px;left:0;right:0;padding:20px;}
+.icon {display:inline-block;width:80px;text-align:center;margin:10px;cursor:pointer;user-select:none;}
+#taskbar {position:fixed;bottom:0;left:0;right:0;height:40px;background:#333;display:flex;align-items:center;padding:0 10px;}
+#start-button {cursor:pointer;user-select:none;margin-right:10px;}
+#running-windows {display:flex;gap:5px;}
+.taskbar-icon {background:#555;padding:2px 5px;border-radius:3px;cursor:pointer;}
+.window {position:absolute;width:300px;height:200px;background:white;color:black;border:1px solid #888;box-shadow:4px 4px 10px rgba(0,0,0,0.4);display:flex;flex-direction:column;resize:both;overflow:hidden;z-index:1;}
+.window-header {background:#0078d7;color:white;padding:5px;cursor:move;user-select:none;display:flex;justify-content:space-between;align-items:center;}
+.window-content {flex:1;padding:10px;background:#f3f3f3;overflow:auto;}
+.close-button {cursor:pointer;}
+#start-menu {position:fixed;bottom:40px;left:10px;width:200px;background:#222;display:none;flex-direction:column;border:1px solid #444;}
+.start-app {padding:10px;cursor:pointer;}
+.start-app:hover {background:#555;}
+#chat-log {height:120px;overflow:auto;border:1px solid #ccc;padding:5px;background:white;color:black;}
+canvas {border:1px solid #000;background:white;}
+</style>
+</head>
+<body>
+
+<div id="desktop">
+  <!-- Icons for 13 cartridges -->
+  <div class="icon" data-app="notepad">📝 Notepad</div>
+  <div class="icon" data-app="calculator">🧮 Calculator</div>
+  <div class="icon" data-app="chatbot">🤖 AI Chat</div>
+  <div class="icon" data-app="clock">⏰ Clock</div>
+  <div class="icon" data-app="explorer">📁 Explorer</div>
+  <div class="icon" data-app="weather">☀️ Weather</div>
+  <div class="icon" data-app="music">🎵 Music</div>
+  <div class="icon" data-app="imageviewer">🖼️ Images</div>
+  <div class="icon" data-app="terminal">💻 Terminal</div>
+  <div class="icon" data-app="browser">🌐 Browser</div>
+  <div class="icon" data-app="paint">🎨 Paint</div>
+  <div class="icon" data-app="sticky">🗒️ Notes</div>
+  <div class="icon" data-app="settings">⚙️ Settings</div>
+</div>
+
+<div id="taskbar">
+  <div id="start-button">Start</div>
+  <div id="running-windows"></div>
+</div>
+
+<div id="start-menu">
+  <!-- 13 start menu apps -->
+  <div class="start-app" data-app="notepad">📝 Notepad</div>
+  <div class="start-app" data-app="calculator">🧮 Calculator</div>
+  <div class="start-app" data-app="chatbot">🤖 AI Chat</div>
+  <div class="start-app" data-app="clock">⏰ Clock</div>
+  <div class="start-app" data-app="explorer">📁 Explorer</div>
+  <div class="start-app" data-app="weather">☀️ Weather</div>
+  <div class="start-app" data-app="music">🎵 Music</div>
+  <div class="start-app" data-app="imageviewer">🖼️ Images</div>
+  <div class="start-app" data-app="terminal">💻 Terminal</div>
+  <div class="start-app" data-app="browser">🌐 Browser</div>
+  <div class="start-app" data-app="paint">🎨 Paint</div>
+  <div class="start-app" data-app="sticky">🗒️ Notes</div>
+  <div class="start-app" data-app="settings">⚙️ Settings</div>
+</div>
+
+<div id="windows-container"></div>
+
+<script>
+let topZ=1;
+
+function makeDraggable(win, header){
+  let dragging=false, offsetX=0, offsetY=0;
+  header.addEventListener('mousedown', e=>{
+    dragging=true;
+    topZ++; win.style.zIndex=topZ;
+    offsetX=e.clientX - win.getBoundingClientRect().left;
+    offsetY=e.clientY - win.getBoundingClientRect().top;
+  });
+  window.addEventListener('mousemove', e=>{ if(dragging){ win.style.left=(e.clientX-offsetX)+'px'; win.style.top=(e.clientY-offsetY)+'px'; } });
+  window.addEventListener('mouseup', ()=>dragging=false);
+}
+
+function openWindow(title, contentGenerator){
+  const win=document.createElement('div'); win.className='window'; win.style.top='100px'; win.style.left='100px'; win.style.zIndex=++topZ;
+  const header=document.createElement('div'); header.className='window-header';
+  header.innerHTML=`<span>${title}</span> <span class="close-button">✖️</span>`;
+  const body=document.createElement('div'); body.className='window-content';
+  win.appendChild(header); win.appendChild(body);
+  contentGenerator(body);
+  document.getElementById('windows-container').appendChild(win);
+  makeDraggable(win, header);
+
+  // Taskbar
+  const taskIcon=document.createElement('div'); taskIcon.className='taskbar-icon'; taskIcon.textContent=title;
+  document.getElementById('running-windows').appendChild(taskIcon);
+  let minimized=false;
+  taskIcon.addEventListener('click', ()=>{
+    if(minimized){ win.style.display='flex'; minimized=false; win.style.zIndex=++topZ; }
+    else{ win.style.display='none'; minimized=true; }
+  });
+  header.querySelector('.close-button').addEventListener('click', ()=>{ win.remove(); taskIcon.remove(); });
+  return win;
+}
+
+// --- 13 Apps Implementation ---
+const apps={
+  notepad: body=>{ const ta=document.createElement('textarea'); ta.style.width='100%'; ta.style.height='100%'; body.appendChild(ta); },
+  calculator: body=>{ body.innerHTML='Calc:<br>'; const i=document.createElement('input'); const b=document.createElement('button'); const r=document.createElement('div'); i.style.width='80%'; b.textContent='='; body.appendChild(i); body.appendChild(b); body.appendChild(r); b.onclick=()=>{ try{ r.textContent=eval(i.value); }catch{ r.textContent='Error'; } } },
+  chatbot: body=>{ body.innerHTML='<div id="chat-log"></div>'; const log=body.querySelector('#chat-log'); const i=document.createElement('input'); i.style.width='80%'; const b=document.createElement('button'); b.textContent='Send'; body.appendChild(i); body.appendChild(b); const OPENAI_API_KEY='YOUR_OPENAI_API_KEY'; b.onclick=async()=>{ const msg=i.value; if(!msg)return; log.innerHTML+=`<div><b>You:</b>${msg}</div>`; i.value=''; const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENAI_API_KEY},body:JSON.stringify({model:"gpt-3.5-turbo",messages:[{role:"user",content:msg}],max_tokens:150})}); const data=await res.json(); log.innerHTML+=`<div><b>AI:</b>${data.choices[0].message.content}</div>`; log.scrollTop=log.scrollHeight; } },
+  clock: body=>{ const d=document.createElement('div'); d.style.fontSize='24px'; body.appendChild(d); setInterval(()=>{ d.textContent=new Date().toLocaleTimeString(); },1000); },
+  explorer: body=>{ const f={"Docs":["a.txt","b.txt"],"Pics":["img.png"]}; for(let k in f){ const fd=document.createElement('div'); fd.textContent="📁 "+k; fd.style.cursor='pointer'; fd.onclick=()=>alert(f[k].join("\n")); body.appendChild(fd); } },
+  weather: body=>{ body.innerHTML='Weather: Sunny, 25°C'; },
+  music: body=>{ body.innerHTML='🎵 Music Player (dummy)'; },
+  imageviewer: body=>{ body.innerHTML='🖼️ Image Viewer (dummy)'; },
+  terminal: body=>{ const t=document.createElement('textarea'); t.style.width='100%'; t.style.height='100%'; t.value='> '; body.appendChild(t); },
+  browser: body=>{ const i=document.createElement('iframe'); i.style.width='100%'; i.style.height='100%'; i.src='https://example.com'; body.appendChild(i); },
+  paint: body=>{ const c=document.createElement('canvas'); c.width=280; c.height=180; let ctx=c.getContext('2d'),drawing=false; c.onmousedown=e=>drawing=true; c.onmouseup=e=>drawing=false; c.onmousemove=e=>{ if(drawing){ ctx.fillRect(e.offsetX,e.offsetY,2,2); } }; body.appendChild(c); },
+  sticky: body=>{ const t=document.createElement('textarea'); t.style.width='100%'; t.style.height='100%'; t.value='Sticky Note'; body.appendChild(t); },
+  settings: body=>{ body.innerHTML='⚙️ Settings Panel (dummy)'; }
+};
+
+// --- Icon & Start Menu Events ---
+document.querySelectorAll('.icon').forEach(icon=>{ icon.addEventListener('dblclick', ()=>openWindow(icon.textContent, apps[icon.dataset.app])); });
+const startButton=document.getElementById('start-button'); const startMenu=document.getElementById('start-menu');
+startButton.onclick=()=>{ startMenu.style.display=startMenu.style.display==='flex'?'none':'flex'; };
+document.querySelectorAll('.start-app').forEach(item=>{ item.onclick=()=>{ openWindow(item.textContent, apps[item.dataset.app]); startMenu.style.display='none'; } });
+</script>
+</body>
+</html>
