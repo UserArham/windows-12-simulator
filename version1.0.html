@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Windows 12 Simulator GPT+</title>
+<style>
+body, html {margin:0;padding:0;height:100%;font-family:sans-serif;background:#1e1e1e;color:white;overflow:hidden;}
+#desktop {position:absolute;top:0;bottom:40px;left:0;right:0;padding:20px;}
+.icon {display:inline-block;width:80px;text-align:center;margin:10px;cursor:pointer;user-select:none;}
+#taskbar {position:fixed;bottom:0;left:0;right:0;height:40px;background:#333;display:flex;align-items:center;padding:0 10px;}
+#start-button {cursor:pointer;user-select:none;margin-right:10px;}
+#running-windows {display:flex;gap:5px;}
+.taskbar-icon {background:#555;padding:2px 5px;border-radius:3px;cursor:pointer;}
+.window {position:absolute;width:300px;height:200px;background:white;color:black;border:1px solid #888;box-shadow:4px 4px 10px rgba(0,0,0,0.4);display:flex;flex-direction:column;resize:both;overflow:hidden;z-index:1;}
+.window-header {background:#0078d7;color:white;padding:5px;cursor:move;user-select:none;display:flex;justify-content:space-between;align-items:center;}
+.window-content {flex:1;padding:10px;background:#f3f3f3;overflow:auto;}
+.close-button {cursor:pointer;}
+#start-menu {position:fixed;bottom:40px;left:10px;width:200px;background:#222;display:none;flex-direction:column;border:1px solid #444;}
+.start-app {padding:10px;cursor:pointer;}
+.start-app:hover {background:#555;}
+#chat-log {height:120px;overflow:auto;border:1px solid #ccc;padding:5px;background:white;color:black;}
+</style>
+</head>
+<body>
+
+<div id="desktop">
+  <div class="icon" data-app="notepad">📝 Notepad</div>
+  <div class="icon" data-app="calculator">🧮 Calculator</div>
+  <div class="icon" data-app="chatbot">🤖 AI Chat</div>
+  <div class="icon" data-app="clock">⏰ Clock</div>
+  <div class="icon" data-app="explorer">📁 File Explorer</div>
+</div>
+
+<div id="taskbar">
+  <div id="start-button">Start</div>
+  <div id="running-windows"></div>
+</div>
+
+<div id="start-menu">
+  <div class="start-app" data-app="notepad">📝 Notepad</div>
+  <div class="start-app" data-app="calculator">🧮 Calculator</div>
+  <div class="start-app" data-app="chatbot">🤖 AI Chat</div>
+  <div class="start-app" data-app="clock">⏰ Clock</div>
+  <div class="start-app" data-app="explorer">📁 File Explorer</div>
+</div>
+
+<div id="windows-container"></div>
+
+<script>
+let topZ = 1;
+const runningWindows = [];
+
+function makeDraggable(win, header){
+  let dragging=false, offsetX=0, offsetY=0;
+  header.addEventListener('mousedown', e=>{
+    dragging=true;
+    topZ++; win.style.zIndex=topZ;
+    offsetX=e.clientX - win.getBoundingClientRect().left;
+    offsetY=e.clientY - win.getBoundingClientRect().top;
+  });
+  window.addEventListener('mousemove', e=>{
+    if(dragging){ win.style.left=(e.clientX-offsetX)+'px'; win.style.top=(e.clientY-offsetY)+'px'; }
+  });
+  window.addEventListener('mouseup', ()=>dragging=false);
+}
+
+function openWindow(title, contentGenerator){
+  const win=document.createElement('div'); win.classList.add('window'); win.style.top='100px'; win.style.left='100px'; topZ++; win.style.zIndex=topZ;
+  const header=document.createElement('div'); header.classList.add('window-header');
+  header.innerHTML=`<span>${title}</span> <span class="close-button">✖️</span>`; win.appendChild(header);
+  const body=document.createElement('div'); body.classList.add('window-content'); win.appendChild(body);
+  contentGenerator(body);
+  document.getElementById('windows-container').appendChild(win);
+  makeDraggable(win, header);
+
+  // Taskbar icon
+  const taskIcon = document.createElement('div'); taskIcon.className='taskbar-icon'; taskIcon.textContent=title;
+  document.getElementById('running-windows').appendChild(taskIcon);
+  let minimized = false;
+  taskIcon.addEventListener('click', ()=>{
+    if(minimized){ win.style.display='flex'; minimized=false; win.style.zIndex=++topZ; } 
+    else{ win.style.display='none'; minimized=true; }
+  });
+
+  // Close button
+  header.querySelector('.close-button').addEventListener('click', ()=>{
+    win.remove(); taskIcon.remove();
+  });
+
+  return win;
+}
+
+const apps={
+  notepad: body=>{ const ta=document.createElement('textarea'); ta.style.width='100%'; ta.style.height='100%'; body.appendChild(ta); },
+  calculator: body=>{
+    body.innerHTML='Simple Calculator:<br>';
+    const input=document.createElement('input'); body.appendChild(input);
+    const button=document.createElement('button'); button.innerText='='; body.appendChild(button);
+    const result=document.createElement('div'); body.appendChild(result);
+    button.addEventListener('click', ()=>{ try{ result.textContent=eval(input.value); }catch{ result.textContent='Error'; }});
+  },
+  chatbot: body=>{
+    body.innerHTML='<div id="chat-log"></div>';
+    const chatLog=body.querySelector('#chat-log');
+    const input=document.createElement('input'); input.style.width='80%'; body.appendChild(input);
+    const send=document.createElement('button'); send.innerText='Send'; body.appendChild(send);
+
+    const OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY'; // Replace with your key
+
+    async function gptReply(message){
+      const response = await fetch('https://api.openai.com/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENAI_API_KEY},
+        body:JSON.stringify({model:"gpt-3.5-turbo",messages:[{role:"user",content:message}],max_tokens:150})
+      });
+      const data = await response.json();
+      return data.choices[0].message.content;
+    }
+
+    send.addEventListener('click', async ()=>{
+      const msg=input.value; if(!msg) return;
+      chatLog.innerHTML+=`<div><b>You:</b> ${msg}</div>`;
+      input.value='';
+      const reply=await gptReply(msg);
+      chatLog.innerHTML+=`<div><b>AI:</b> ${reply}</div>`;
+      chatLog.scrollTop=chatLog.scrollHeight;
+    });
+  },
+  clock: body=>{
+    const div=document.createElement('div'); div.style.fontSize='24px'; body.appendChild(div);
+    function update(){ div.textContent=new Date().toLocaleTimeString(); }
+    setInterval(update,1000); update();
+  },
+  explorer: body=>{
+    const folders = { "Documents": ["file1.txt","file2.txt"], "Pictures": ["image1.jpg","image2.png"] };
+    for(let f in folders){
+      const folderDiv=document.createElement('div'); folderDiv.textContent="📁 "+f; folderDiv.style.cursor='pointer'; body.appendChild(folderDiv);
+      folderDiv.addEventListener('click', ()=>{ alert("Contents:\n"+folders[f].join("\n")); });
+    }
+  }
+};
+
+document.querySelectorAll('.icon').forEach(icon=>{ icon.addEventListener('dblclick', ()=>openWindow(icon.textContent, apps[icon.dataset.app])); });
+const startButton=document.getElementById('start-button'); const startMenu=document.getElementById('start-menu');
+startButton.addEventListener('click', ()=>{ startMenu.style.display=startMenu.style.display==='flex'?'none':'flex'; });
+document.querySelectorAll('.start-app').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    openWindow(item.textContent, apps[item.dataset.app]);
+    startMenu.style.display='none';
+  });
+});
+</script>
+</body>
+</html>
