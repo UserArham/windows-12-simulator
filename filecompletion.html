@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Windows 12 Simulator V5 - All-in-One</title>
+<style>
+/* ===== Desktop & Body ===== */
+body, html {margin:0;padding:0;height:100%;font-family:"Segoe UI",sans-serif;background:#1e1e1e;color:white;overflow:hidden;}
+#desktop {position:absolute;top:0;bottom:40px;left:0;right:0;padding:20px;display:flex;flex-wrap:wrap;align-content:flex-start;}
+.icon {width:100px;text-align:center;margin:10px;cursor:pointer;user-select:none;transition:transform 0.2s,color 0.2s;}
+.icon:hover {transform:scale(1.1); color:#00aaff;}
+/* ===== Taskbar ===== */
+#taskbar {position:fixed;bottom:0;left:0;right:0;height:40px;background:#222;display:flex;align-items:center;padding:0 10px;box-shadow:0 -2px 5px rgba(0,0,0,0.5);}
+#start-button {cursor:pointer;margin-right:10px;background:#0078d7;padding:5px 10px;border-radius:4px;transition:background 0.2s;}
+#start-button:hover {background:#005ea6;}
+#running-windows {display:flex;gap:5px;}
+.taskbar-icon {background:#555;padding:2px 8px;border-radius:3px;cursor:pointer;transition:background 0.2s;}
+.taskbar-icon:hover {background:#0078d7;}
+/* ===== Start Menu ===== */
+#start-menu {position:fixed;bottom:40px;left:10px;width:220px;background:#222;display:none;flex-direction:column;border:1px solid #444;box-shadow:0 0 10px rgba(0,0,0,0.5);animation:fadeIn 0.2s ease-in;}
+@keyframes fadeIn {from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.start-app {padding:10px;cursor:pointer;border-bottom:1px solid #333;transition:background 0.2s;}
+.start-app:hover {background:#555;}
+/* ===== Windows ===== */
+.window {position:absolute;width:500px;height:350px;background:white;color:black;border:1px solid #888;border-radius:6px;box-shadow:4px 4px 15px rgba(0,0,0,0.6);display:flex;flex-direction:column;resize:both;overflow:hidden;z-index:1;transition:box-shadow 0.2s;}
+.window:hover {box-shadow:6px 6px 20px rgba(0,0,0,0.8);}
+.window-header {background:#0078d7;color:white;padding:5px;cursor:move;user-select:none;display:flex;justify-content:space-between;align-items:center;font-weight:bold;border-top-left-radius:6px;border-top-right-radius:6px;}
+.window-header .close-button {cursor:pointer;padding:2px 5px;transition:background 0.2s;}
+.window-header .close-button:hover {background:#ff4c4c;border-radius:3px;}
+.window-toolbar {background:#eee;padding:5px;display:flex;gap:5px;border-bottom:1px solid #ccc;}
+.window-toolbar button {padding:3px 6px;cursor:pointer;border:1px solid #888;background:#f3f3f3;}
+.window-toolbar button:hover {background:#ddd;}
+.window-content {flex:1;padding:10px;background:#fdfdfd;overflow:auto;font-size:14px;line-height:1.4;color:#111;}
+textarea,input,select {font-family:"Segoe UI",sans-serif;font-size:14px;padding:5px;border:1px solid #888;border-radius:4px;outline:none;margin-top:5px;}
+textarea:focus,input:focus,select:focus {border-color:#0078d7;}
+table {border-collapse:collapse;width:100%;}
+td, th {border:1px solid #888;padding:5px;text-align:center;}
+canvas {border:1px solid #000;background:white;cursor:crosshair;}
+#chat-log {height:120px;overflow:auto;border:1px solid #ccc;padding:5px;background:white;color:black;font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="desktop">
+  <div class="icon" data-app="word">📝 Word</div>
+  <div class="icon" data-app="excel">📊 Excel</div>
+  <div class="icon" data-app="powerpoint">📽️ PowerPoint</div>
+  <div class="icon" data-app="outlook">📧 Outlook</div>
+  <div class="icon" data-app="onenote">🗒️ OneNote</div>
+  <div class="icon" data-app="teams">💬 Teams</div>
+  <div class="icon" data-app="planner">📌 Planner</div>
+  <div class="icon" data-app="todo">✅ To-Do</div>
+</div>
+
+<div id="taskbar">
+  <div id="start-button">Start</div>
+  <div id="running-windows"></div>
+</div>
+
+<div id="start-menu">
+  <div class="start-app" data-app="word">📝 Word</div>
+  <div class="start-app" data-app="excel">📊 Excel</div>
+  <div class="start-app" data-app="powerpoint">📽️ PowerPoint</div>
+  <div class="start-app" data-app="outlook">📧 Outlook</div>
+  <div class="start-app" data-app="onenote">🗒️ OneNote</div>
+  <div class="start-app" data-app="teams">💬 Teams</div>
+  <div class="start-app" data-app="planner">📌 Planner</div>
+  <div class="start-app" data-app="todo">✅ To-Do</div>
+</div>
+
+<div id="windows-container"></div>
+
+<script>
+let topZ=1;
+function makeDraggable(win, header){
+  let dragging=false, offsetX=0, offsetY=0;
+  header.addEventListener('mousedown', e=>{
+    dragging=true; topZ++; win.style.zIndex=topZ;
+    offsetX=e.clientX - win.getBoundingClientRect().left;
+    offsetY=e.clientY - win.getBoundingClientRect().top;
+  });
+  window.addEventListener('mousemove', e=>{ if(dragging){ win.style.left=(e.clientX-offsetX)+'px'; win.style.top=(e.clientY-offsetY)+'px'; } });
+  window.addEventListener('mouseup', ()=>dragging=false);
+}
+function openWindow(title, contentGenerator){
+  const win=document.createElement('div'); win.className='window'; win.style.top='100px'; win.style.left='100px'; win.style.zIndex=++topZ;
+  const header=document.createElement('div'); header.className='window-header';
+  header.innerHTML=`<span>${title}</span> <span class="close-button">✖️</span>`;
+  const body=document.createElement('div'); body.className='window-content';
+  win.appendChild(header); win.appendChild(body);
+  contentGenerator(body, win);
+  document.getElementById('windows-container').appendChild(win);
+  makeDraggable(win, header);
+
+  const taskIcon=document.createElement('div'); taskIcon.className='taskbar-icon'; taskIcon.textContent=title;
+  document.getElementById('running-windows').appendChild(taskIcon);
+  let minimized=false;
+  taskIcon.addEventListener('click', ()=>{
+    if(minimized){ win.style.display='flex'; minimized=false; win.style.zIndex=++topZ; } else{ win.style.display='none'; minimized=true; }
+  });
+  header.querySelector('.close-button').addEventListener('click', ()=>{ win.remove(); taskIcon.remove(); });
+  return win;
+}
+
+// --- Microsoft 365 Enhanced Apps ---
+const apps={
+word: (body)=>{
+  const toolbar=document.createElement('div'); toolbar.className='window-toolbar';
+  ['B','I','U'].forEach(f=>{
+    const btn=document.createElement('button'); btn.textContent=f; btn.onclick=()=>document.execCommand(f.toLowerCase(),false,null);
+    toolbar.appendChild(btn);
+  });
+  body.appendChild(toolbar);
+  const editor=document.createElement('div'); editor.contentEditable=true; editor.style.height='calc(100% - 35px)'; editor.style.border='1px solid #888'; editor.style.padding='5px';
+  body.appendChild(editor);
+},
+excel: (body)=>{
+  const table=document.createElement('table'); table.contentEditable=false;
+  for(let i=0;i<10;i++){
+    const tr=document.createElement('tr');
+    for(let j=0;j<5;j++){
+      const td=document.createElement('td'); td.contentEditable=true; td.textContent='';
+      tr.appendChild(td);
+    }
+    table.appendChild(tr);
+  }
+  body.appendChild(table);
+},
+powerpoint: (body)=>{
+  let currentSlide=0; const slides=['Slide 1','Slide 2','Slide 3'];
+  const container=document.createElement('div'); container.style.height='calc(100% - 35px)'; container.style.border='1px solid #888'; container.style.display='flex'; container.style.alignItems='center'; container.style.justifyContent='center'; container.style.fontSize='20px'; container.textContent=slides[currentSlide];
+  body.appendChild(container);
+  const toolbar=document.createElement('div'); toolbar.className='window-toolbar';
+  const prev=document.createElement('button'); prev.textContent='Prev'; prev.onclick=()=>{currentSlide=(currentSlide-1+slides.length)%slides.length; container.textContent=slides[currentSlide];};
+  const next=document.createElement('button'); next.textContent='Next'; next.onclick=()=>{currentSlide=(currentSlide+1)%slides.length; container.textContent=slides[currentSlide];};
+  toolbar.appendChild(prev); toolbar.appendChild(next);
+  body.insertBefore(toolbar, container);
+},
+outlook: (body)=>{
+  const log=document.createElement('div'); log.style.height='200px'; log.style.overflow='auto'; log.style.border='1px solid #ccc'; log.style.background='white'; log.style.color='black'; body.appendChild(log);
+  const input=document.createElement('input'); input.style.width='80%'; const send=document.createElement('button'); send.textContent='Send';
+  body.appendChild(input); body.appendChild(send);
+  send.onclick=()=>{ if(!input.value) return; log.innerHTML+=`<div><b>You:</b> ${input.value} <i>${new Date().toLocaleTimeString()}</i></div>`; input.value=''; log.scrollTop=log.scrollHeight; };
+},
+onenote: (body)=>{
+  const pages=['Page 1','Page 2']; let current=0;
+  const area=document.createElement('textarea'); area.style.width='100%'; area.style.height='calc(100% - 30px)'; area.value='OneNote '+pages[current]; body.appendChild(area);
+  const toolbar=document.createElement('div'); toolbar.className='window-toolbar';
+  pages.forEach((p,i)=>{ const btn=document.createElement('button'); btn.textContent=p; btn.onclick=()=>{current=i; area.value='OneNote '+pages[current];}; toolbar.appendChild(btn); });
+  body.insertBefore(toolbar, area);
+},
+teams: (body)=>{
+  const log=document.createElement('div'); log.style.height='200px'; log.style.overflow='auto'; log.style.border='1px solid #ccc'; log.style.background='white'; log.style.color='black'; body.appendChild(log);
+  const input=document.createElement('input'); input.style.width='80%'; const send=document.createElement('button'); send.textContent='Send';
+  body.appendChild(input); body.appendChild(send);
+  send.onclick=()=>{ if(!input.value) return; log.innerHTML+=`<div><b>You:</b> ${input.value} <i>${new Date().toLocaleTimeString()}</i></div>`; input.value=''; log.scrollTop=log.scrollHeight; };
+},
+planner: (body)=>{ const ul=document.createElement('ul'); for(let i=1;i<=5;i++){ const li=document.createElement('li'); li.textContent='Task '+i; li.style.cursor='pointer'; li.onclick=()=>{li.style.textDecoration=li.style.textDecoration==='line-through'?'':'line-through';}; ul.appendChild(li);} body.appendChild(ul); },
+todo: (body)=>{ const ul=document.createElement('ul'); for(let i=1;i<=5;i++){ const li=document.createElement('li'); li.textContent='ToDo '+i; li.style.cursor='pointer'; li.onclick=()=>{li.style.textDecoration=li.style.textDecoration==='line-through'?'':'line-through';}; ul.appendChild(li);} body.appendChild(ul); }
+};
+
+// --- Icon & Start Menu ---
+document.querySelectorAll('.icon').forEach(icon=>{ icon.addEventListener('dblclick', ()=>openWindow(icon.textContent, apps[icon.dataset.app])); });
+const startButton=document.getElementById('start-button'); const startMenu=document.getElementById('start-menu');
+startButton.onclick=()=>{ startMenu.style.display=startMenu.style.display==='flex'?'none':'flex'; };
+document.querySelectorAll('.start-app').forEach(item=>{ item.onclick=()=>{ openWindow(item.textContent, apps[item.dataset.app]); startMenu.style.display='none'; } });
+</script>
+</body>
+</html>
